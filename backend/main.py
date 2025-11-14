@@ -37,3 +37,14 @@ async def users(db: Session=Depends(get_db)):
         return all_users 
     else:
         raise HTTPException(status_code=404, detail="No users found.")
+    
+
+@app.post("/login")
+def login_user(user: schemas.LoginModel, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if user.password != db_user.password:
+        raise HTTPException(status_code=400, detail="Invalid password.")
+        
+    return {"message": f"Welcome {db_user.username}", "role": db_user.role}

@@ -12,3 +12,8 @@ class UserModel(BaseModel):
     email: EmailStr 
     password: str 
     role: Role 
+
+
+class LoginModel(BaseModel):
+    email: EmailStr 
+    password: str 
