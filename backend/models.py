@@ -1,5 +1,5 @@
 from database import Base
-from sqlalchemy import Column, Integer, String, JSON, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, JSON, Boolean, ForeignKey
 from uuid import uuid4
 from datetime import datetime
 
@@ -27,4 +27,14 @@ class Question(Base):
     max_score = Column(Integer, default=1)
 
 
+
+class Exam(Base):
+    __tablename__ = "exams"
+
+    id = Column(String, default=lambda: str(uuid4()), primary_key=True)
+    title = Column(String)
+    start_time = Column(String)
+    end_time = Column(String)
+    duration = Column(Integer)
+    published = Column(Boolean, default=False)
 
