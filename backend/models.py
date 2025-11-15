@@ -38,3 +38,18 @@ class Exam(Base):
     duration = Column(Integer)
     published = Column(Boolean, default=False)
 
+# ok Ok Ok 
+
+ 
+# Connection of exam and questions tables.
+class ExamQuestionBank (Base):
+    __tablename__ = "exam_questions"
+
+    id = Column(String, default=lambda: str(uuid4()), primary_key=True)
+    exam_id = Column(String, ForeignKey("exams.id"))
+    question_id = Column(String, ForeignKey("questions.id")) 
+
+
+
+
+    
