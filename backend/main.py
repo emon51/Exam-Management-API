@@ -146,4 +146,15 @@ async def questions(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not found.")
 
 
+# Publish exam.
+@app.post("/exams/{exam_id}/publish")
+def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
+    
+    exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found.")
+    exam.published = True
+    db.commit()
+    return {"message": "Published."}
+
 
