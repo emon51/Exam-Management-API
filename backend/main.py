@@ -139,7 +139,7 @@ def add_questions_to_exam(exam_id: str, question_ids: List[str], db: Session = D
 
 @app.get("/exams/exam-question-list")
 async def questions(db: Session = Depends(get_db)):
-    all_records = db.query(models.ExamQuestion).all()
+    all_records = db.query(models.ExamQuestionBank).all()
     if all_records:
         return all_records
     else:
@@ -157,4 +157,12 @@ def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Published."}
 
+
+# Get a specific exam's questions.
+@app.get("/exams/{exam_id}/questions")
+def get_exam_questions(exam_id: str, db: Session = Depends(get_db)):
+    records = db.query(models.ExamQuestionBank).filter(models.ExamQuestionBank.exam_id == exam_id).all()
+    all_question_ids = [record.question_id for record in records]
+    all_questions = db.query(models.Question).filter(models.Question.id.in_(all_question_ids)).all() if all_question_ids else []
+    return all_questions
 
