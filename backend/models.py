@@ -1,5 +1,5 @@
 from database import Base
-from sqlalchemy import Column, Integer, String, JSON, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, JSON, Boolean, ForeignKey, DateTime
 from uuid import uuid4
 from datetime import datetime
 
@@ -38,10 +38,8 @@ class Exam(Base):
     duration = Column(Integer)
     published = Column(Boolean, default=False)
 
-# ok Ok Ok 
-
  
-# Connection of exam and questions tables.
+# Connection of exam and questions table.
 class ExamQuestionBank (Base):
     __tablename__ = "exam_questions"
 
@@ -51,5 +49,17 @@ class ExamQuestionBank (Base):
 
 
 
+class Submission(Base):
+    __tablename__ = "submissions"
+
+    id = Column(String, default=lambda: str(uuid4()), primary_key=True)
+
+    exam_id = Column(String, ForeignKey("exams.id"))
+    student_id = Column(String, ForeignKey("users.id"))
+
+    answers = Column(JSON)
+    score = Column(Integer, default=0)
+    submitted = Column(Boolean, default=False)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
 
     
