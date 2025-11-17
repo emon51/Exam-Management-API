@@ -159,10 +159,52 @@ def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
 
 
 # Get a specific exam's questions.
-@app.get("/exams/{exam_id}/questions")
-def get_exam_questions(exam_id: str, db: Session = Depends(get_db)):
+@app.get("/exams/{exam_id}/questions/")
+def get_exam_questions(exam_id: str, student_id: str, db: Session = Depends(get_db)):
     records = db.query(models.ExamQuestionBank).filter(models.ExamQuestionBank.exam_id == exam_id).all()
     all_question_ids = [record.question_id for record in records]
     all_questions = db.query(models.Question).filter(models.Question.id.in_(all_question_ids)).all() if all_question_ids else []
     return all_questions
 
+
+# Submit exam.
+@app.post("/exams/{exam_id}/submit/{student_id}")
+def submit_exam(exam_id: str, student_id: str, payload: schemas.SubmitPayload, db: Session = Depends(get_db)):
+    # Get all questions belonging to this exam.
+    qids = [q.question_id for q in db.query(models.ExamQuestionBank).filter_by(exam_id=exam_id).all()]
+    questions = db.query(models.Question).filter(models.Question.id.in_(qids)).all()
+
+    score = 0
+    stored = {}
+
+    for q in questions:
+        qid = str(q.id)
+        ans = payload.answers.get(qid)
+        stored[qid] = ans
+        
+        if not q.correct_answers:
+            continue
+
+        # Multi-select.
+        if isinstance(q.correct_answers, list):
+            if isinstance(ans, list) and set(ans) == set(q.correct_answers):
+                score += q.max_score
+
+        # Single answer
+        else:
+            if ans == q.correct_answers:
+                score += q.max_score
+
+    # Save submission
+    sub = models.Submission(
+        exam_id=exam_id,
+        student_id=student_id,
+        answers=stored,
+        score=score,
+        submitted=True
+    )
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+
+    return {"score": score, "submission_id": sub.id}
