@@ -49,3 +49,5 @@ class ExamCreate(BaseModel):
     class Config:
         orm_mode = True
 
+class SubmitPayload(BaseModel):
+    answers: dict  
