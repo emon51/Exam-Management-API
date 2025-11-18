@@ -8,9 +8,14 @@ import json
 from io import BytesIO
 from typing import List, Optional
 
+#==================================================================================================================
+
 app = FastAPI(title="Online Exam Management API.")
 
+#==================================================================================================================
+
 Base.metadata.create_all(bind=engine)
+#==================================================================================================================
 
 # To get DB session.
 def get_db():
@@ -20,7 +25,7 @@ def get_db():
     finally:
         db.close()
 
-#========================================================================================
+#=================================================================================================================
 # Helper functions.
 
 def parse_excel(file_obj):
@@ -40,10 +45,12 @@ def parse_excel(file_obj):
         })
 
     return rows
-#==================================================================
+#==================================================================================================================
+
 @app.get('/')
 async def index():
     return {"message": "Welcome."}
+#==================================================================================================================
 
 @app.post('/signup')
 async def signup(user: schemas.UserModel, db: Session = Depends(get_db)):
@@ -53,6 +60,7 @@ async def signup(user: schemas.UserModel, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     return db_user 
+#==================================================================================================================
 
 @app.get('/users')
 async def users(db: Session=Depends(get_db)):
@@ -62,6 +70,7 @@ async def users(db: Session=Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="No users found.")
     
+#==================================================================================================================
 
 @app.post("/login")
 async def user_login(user: schemas.LoginModel, db: Session = Depends(get_db)):
@@ -74,6 +83,7 @@ async def user_login(user: schemas.LoginModel, db: Session = Depends(get_db)):
     return {"message": f"Welcome {db_user.username}", "user_id": db_user.id, "role": db_user.role}
 
     
+#==================================================================================================================
 
 @app.get("/questions/list")
 async def questions(db: Session = Depends(get_db)):
@@ -84,6 +94,7 @@ async def questions(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No questions found.")
     
 
+#==================================================================================================================
 
 @app.post("/questions/upload-xlsx")
 async def upload_questions(file: UploadFile, db: Session = Depends(get_db)):
@@ -104,6 +115,7 @@ async def upload_questions(file: UploadFile, db: Session = Depends(get_db)):
 
     return {"message": "Questions uploaded successfully."}
 
+#==================================================================================================================
 
 
 @app.post("/exams/create")
@@ -114,6 +126,7 @@ async def create_exam(exm: schemas.ExamCreate, db: Session = Depends(get_db)):
     return {"message": "Exam created successfully."}
 
 
+#==================================================================================================================
 
 @app.get("/exams/list")
 async def questions(db: Session = Depends(get_db)):
@@ -123,6 +136,7 @@ async def questions(db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="No exams found.")
 
+#==================================================================================================================
 
 # add questions to exam.
 @app.post("/exams/{exam_id}/add-questions")
@@ -136,6 +150,8 @@ def add_questions_to_exam(exam_id: str, question_ids: List[str], db: Session = D
     db.commit()
     return {"message": "Questions added to the exam."}
 
+#==================================================================================================================
+
 
 @app.get("/exams/exam-question-list")
 async def questions(db: Session = Depends(get_db)):
@@ -145,10 +161,11 @@ async def questions(db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="Not found.")
 
+#==================================================================================================================
 
 # Publish exam.
 @app.post("/exams/{exam_id}/publish")
-def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
+async def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
     
     exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
     if not exam:
@@ -157,19 +174,22 @@ def publish_exam(exam_id: str, request: Request, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Published."}
 
+#==================================================================================================================
+
 
 # Get a specific exam's questions.
 @app.get("/exams/{exam_id}/questions/")
-def get_exam_questions(exam_id: str, student_id: str, db: Session = Depends(get_db)):
+async def get_exam_questions(exam_id: str, student_id: str, db: Session = Depends(get_db)):
     records = db.query(models.ExamQuestionBank).filter(models.ExamQuestionBank.exam_id == exam_id).all()
     all_question_ids = [record.question_id for record in records]
     all_questions = db.query(models.Question).filter(models.Question.id.in_(all_question_ids)).all() if all_question_ids else []
     return all_questions
 
+#==================================================================================================================
 
 # Submit exam.
 @app.post("/exams/{exam_id}/submit/{student_id}")
-def submit_exam(exam_id: str, student_id: str, payload: schemas.SubmitPayload, db: Session = Depends(get_db)):
+async def submit_exam(exam_id: str, student_id: str, payload: schemas.SubmitPayload, db: Session = Depends(get_db)):
     # Get all questions belonging to this exam.
     qids = [q.question_id for q in db.query(models.ExamQuestionBank).filter_by(exam_id=exam_id).all()]
     questions = db.query(models.Question).filter(models.Question.id.in_(qids)).all()
@@ -208,3 +228,55 @@ def submit_exam(exam_id: str, student_id: str, payload: schemas.SubmitPayload, d
     db.refresh(sub)
 
     return {"score": score, "submission_id": sub.id}
+
+#==================================================================================================================
+# Get results for students.
+
+@app.get("/results/student/{student_id}")
+async def student_results(student_id: str, db: Session = Depends(get_db)):
+    results = (db.query(models.Submission).filter(models.Submission.student_id == student_id).all())
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No results found.")
+
+    output = []
+    for r in results:
+        exam = db.query(models.Exam).filter(models.Exam.id == r.exam_id).first()
+
+        output.append({
+            "submission_id": r.id,
+            "exam_id": r.exam_id,
+            "exam_title": exam.title,
+            "score": r.score,
+            "answers": r.answers,
+            "submitted": r.submitted
+        })
+
+    return {"student_id": student_id, "results": output}
+
+#==================================================================================================================
+# Get results for admin.
+@app.get("/results/exam/{exam_id}")
+async def exam_results(exam_id: str, db: Session = Depends(get_db)):
+    results = (db.query(models.Submission).filter(models.Submission.exam_id == exam_id).all())
+
+    if not results:
+        raise HTTPException(status_code=404, detail="No submissions found for this exam.")
+
+    output = []
+    for r in results:
+        student = db.query(models.User).filter(models.User.id == r.student_id).first()
+
+        output.append({
+            "submission_id": r.id,
+            "student_id": r.student_id,
+            "student_name": student.username,
+            "score": r.score,
+            "answers": r.answers,
+            "submitted": r.submitted
+        })
+
+    return {"exam_id": exam_id, "results": output}
+
+#==================================================================================================================
+
