@@ -39,7 +39,16 @@ python -m venv venv
      source venv/bin/activate
      ```
      
-3. Install dependencies
+4. Install dependencies
 ```
 pip install -r requirements.txt
 ```
+  
+5. Run the FastAPI server
+   ```
+   uvicorn main:app --reload
+   ```
+6. Open `http://127.0.0.1:8000/docs` in your browser to see API docs.
+
+   **Thank You :)**
+
