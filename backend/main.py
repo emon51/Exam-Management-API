@@ -141,7 +141,7 @@ async def exam_list(db: Session = Depends(get_db)):
 
 # add questions to exam.
 @app.post("/exams/{exam_id}/add-questions", tags=["Question Bank"], description="Add questiosn to an Exam")
-def add_questions_to_exam(exam_id: str, question_ids: List[str], db: Session = Depends(get_db)):
+async def add_questions_to_exam(exam_id: str, question_ids: List[str], db: Session = Depends(get_db)):
     exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
@@ -189,11 +189,7 @@ async def get_exam_questions(exam_id: str, student_id: str, db: Session = Depend
 #==================================================================================================================
 
 # Submit exam.
-<<<<<<< HEAD
 @app.post("/exams/{exam_id}/submit/{student_id}", tags=["Exam"], description="Submit Exam by students")
-=======
-@app.post("/exams/{exam_id}/submit/{student_id}")
->>>>>>> 662012ee1fb9fad131fb8863b22ecc6f9ac14c03
 async def submit_exam(exam_id: str, student_id: str, payload: schemas.SubmittedPayload, db: Session = Depends(get_db)):
     # Get all questions belonging to this exam.
     qids = [q.question_id for q in db.query(models.ExamQuestionBank).filter_by(exam_id=exam_id).all()]
