@@ -16,9 +16,8 @@ No authentication is currently implemented.
 - View scores after submission answers
 
 
-# ER-Diagram
+# Tables and relationship among them
 ```
-
     USERS {
         id string "PK"
         username string
@@ -48,26 +47,19 @@ No authentication is currently implemented.
 
     EXAM_QUESTION_BANK {
         id string "PK"
-        exam_id string "FK"
-        question_id string "FK"
+        exam_id string "FK -> EXAMS.id  (1 exam has many questions)"
+        question_id string "FK -> QUESTIONS.id  (1 question used in many exams)"
     }
 
     SUBMISSIONS {
         id string "PK"
-        exam_id string "FK"
-        student_id string "FK"
+        exam_id string "FK -> EXAMS.id  (1 exam has many submissions)"
+        student_id string "FK -> USERS.id  (1 user has many submissions)"
         answers json
         score int
         submitted boolean
         submitted_at datetime
     }
-
-    Relationships
-    USERS ||--o{ SUBMISSIONS : "submits"
-    EXAMS ||--o{ SUBMISSIONS : "has submissions"
-    EXAMS ||--o{ EXAM_QUESTIONS : "has questions"
-    QUESTIONS ||--o{ EXAM_QUESTIONS : "used in exams"
-
 ```
 
 ## Setup
